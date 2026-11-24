@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 
 import { policyPillars } from "@/lib/policies";
 import {
@@ -18,7 +18,6 @@ import {
 } from "@/lib/street-runner";
 import { drawRunner, loadRunnerArt, type RunnerArt } from "@/lib/street-runner-view";
 
-import { RunnerJoystick } from "./runner-joystick";
 import styles from "./street-runner.module.css";
 
 type Mode = "ready" | "running" | "paused" | "lost" | "won";
@@ -349,6 +348,22 @@ export function StreetRunner() {
     }
   }
 
+  function controlInput(action: () => void) {
+    return {
+      onPointerDown(event: PointerEvent<HTMLButtonElement>) {
+        if (event.button !== 0) return;
+        event.stopPropagation();
+        event.preventDefault();
+        if (event.pointerType === "mouse") sceneRef.current?.focus({ preventScroll: true });
+        action();
+      },
+      onClick(event: MouseEvent<HTMLButtonElement>) {
+        // Pointer activation already runs on press. Keyboard and assistive activation still click.
+        if (event.detail === 0) action();
+      },
+    };
+  }
+
   function handleKeys(event: KeyboardEvent<HTMLElement>) {
     if (event.key === "Escape" && modeRef.current === "running") {
       event.preventDefault();
@@ -403,7 +418,10 @@ export function StreetRunner() {
               </span>
               {hud.combo > 1 && <strong className={styles.combo}>連收 {hud.combo}</strong>}
             </span>
-            <span className={styles.score}><span>分數</span><strong>{String(hud.score).padStart(4, "0")}</strong></span>
+            <span className={styles.score}>
+              {best > 0 && <span className={styles.touchBest}>最高 {best}</span>}
+              <span>分數</span><strong>{String(hud.score).padStart(4, "0")}</strong>
+            </span>
           </div>
           <progress className={styles.progress} max={1} value={hud.progress} aria-label={`${pillar.chinese}街區進度`} />
           <div
@@ -433,6 +451,22 @@ export function StreetRunner() {
               </div>
               <p>{missionComplete ? stage.takeaway : stage.instruction}</p>
             </aside>
+            {mode === "running" && (
+              <div className={styles.touchControls} role="group" aria-label="手機遊戲操作">
+                <div className={styles.touchLaneControls} role="group" aria-label="換道">
+                  <button type="button" className={styles.touchButton} aria-label="往上換道" {...controlInput(() => shiftLane(-1))}>
+                    <span aria-hidden="true">↑</span>
+                  </button>
+                  <button type="button" className={styles.touchButton} aria-label="往下換道" {...controlInput(() => shiftLane(1))}>
+                    <span aria-hidden="true">↓</span>
+                  </button>
+                  <span className={styles.touchLaneNumber} aria-label={`目前車道 ${hud.lane + 1}／3`}>{hud.lane + 1} / 3</span>
+                </div>
+                <button type="button" className={styles.touchJump} {...controlInput(jump)}>
+                  跳躍 <span aria-hidden="true">↑</span>
+                </button>
+              </div>
+            )}
             {mode !== "running" && (
               <div className={styles.overlay}>
                 <div className={styles.panel}>
@@ -441,7 +475,7 @@ export function StreetRunner() {
                     <p>
                       <span className={styles.turnHint}>開始後切換成橫向跑道。</span>
                       <span className={styles.desktopHint}>跟著街區任務換道、跳躍，收集六個 F。</span>
-                      <span className={styles.touchHint}>左手用搖桿換道，右手按跳躍。</span>
+                      <span className={styles.touchHint}>左側上下鍵換道，右側按鍵跳躍。</span>
                     </p>
                   )}
                   {stopped && (
@@ -469,10 +503,6 @@ export function StreetRunner() {
               <span aria-hidden="true">↓</span> 下移
             </button>
           </div>
-          <div className={styles.touchLaneControls}>
-            <RunnerJoystick disabled={mode !== "running"} onStep={shiftLane} />
-            <span className={styles.laneNumber} aria-label={`目前車道 ${hud.lane + 1}／3`}>{hud.lane + 1} / 3</span>
-          </div>
           <div className={styles.actions}>
             {best > 0 && <span className={styles.best}>最高 {best}</span>}
             <button type="button" className={styles.pause} onClick={mode === "paused" ? start : pause} disabled={!canPause}>
@@ -482,16 +512,7 @@ export function StreetRunner() {
               type="button"
               className={styles.jump}
               disabled={mode !== "running"}
-              onPointerDown={(event) => {
-                if (event.button !== 0) return;
-                event.preventDefault();
-                if (event.pointerType === "mouse") sceneRef.current?.focus({ preventScroll: true });
-                jump();
-              }}
-              onClick={(event) => {
-                // Pointer activation jumps on press. Keyboard and assistive activation still click.
-                if (event.detail === 0) jump();
-              }}
+              {...controlInput(jump)}
             >
               跳躍 <span aria-hidden="true">↑</span>
             </button>

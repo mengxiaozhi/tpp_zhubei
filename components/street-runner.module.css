@@ -66,8 +66,9 @@
 
 .mobileBar,
 .mobilePolicy,
+.touchBest,
+.touchControls,
 .touchHint,
-.touchLaneControls,
 .turnHint {
   display: none;
 }
@@ -648,11 +649,10 @@
 
   .game {
     --runner-frame-height: 100dvh;
-    --runner-stick-size: clamp(3.15rem, calc(var(--runner-frame-height) * 0.18), 4.5rem);
     position: absolute;
     inset: 0;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
     margin: 0;
     overflow: hidden;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
@@ -719,6 +719,13 @@
     color: var(--ink);
   }
 
+  .score .touchBest {
+    display: inline;
+    border-inline-end: 1px solid #c6a990;
+    padding-inline-end: 0.45rem;
+    font-variant-numeric: tabular-nums;
+  }
+
   .scene {
     min-height: 0;
     aspect-ratio: auto;
@@ -728,6 +735,11 @@
 
   .scene[data-mode="running"] {
     touch-action: none;
+  }
+
+  .scene[data-mode="running"] .graphicsNotice {
+    top: 0.55rem;
+    bottom: auto;
   }
 
   .missionBrief {
@@ -770,18 +782,7 @@
     overscroll-behavior: contain;
   }
 
-  .controls {
-    flex-wrap: nowrap;
-    gap: 0.45rem;
-    margin: 0;
-    padding: 0.28rem clamp(0.75rem, 3vw, 1.5rem);
-    background: #302631;
-  }
-
-  .game:not([data-mode="running"]) .controls,
-  .controls p,
-  .actions .pause,
-  .controls .laneControls,
+  .controls,
   .desktopHint,
   .policies {
     display: none;
@@ -791,39 +792,85 @@
     display: inline;
   }
 
-  .touchLaneControls {
+  .touchControls {
+    --touch-size: clamp(2.75rem, calc(var(--runner-frame-height) * 0.14), 3.5rem);
+    position: absolute;
+    z-index: 1;
+    inset: 0;
     display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 0.65rem 0.6rem;
+    pointer-events: none;
+  }
+
+  .touchLaneControls {
+    display: grid;
+    grid-template-columns: auto auto;
     align-items: center;
-    gap: 0.72rem;
+    gap: 0.32rem;
+  }
+
+  .touchButton,
+  .touchJump {
+    display: inline-flex;
+    min-width: var(--touch-size);
+    min-height: var(--touch-size);
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    border: 1px solid #fff8ed94;
+    border-radius: 0.7rem;
+    background: #302631d6;
+    color: var(--paper);
+    box-shadow: 0 0.2rem 0.65rem #2a202b45;
+    font-weight: 850;
+    line-height: 1;
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .touchButton {
+    grid-column: 1;
+    font-size: 1.5rem;
+  }
+
+  .touchLaneNumber {
+    grid-area: 1 / 2;
+    align-self: start;
+    border-radius: 1rem;
+    padding: 0.24rem 0.44rem;
+    background: #302631c7;
+    color: var(--paper);
+    font-size: 0.7rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .touchJump {
+    min-width: clamp(4.6rem, 13vw, 6.5rem);
+    padding-inline: 0.75rem;
+    background: #075d5ce6;
+    white-space: nowrap;
+  }
+
+  .touchButton:active,
+  .touchJump:active {
+    border-color: var(--paper);
+    background: #0a7575;
+    box-shadow: inset 0 0.14rem 0.36rem #002c3750;
+  }
+
+  .touchButton:focus-visible,
+  .touchJump:focus-visible {
+    outline: 2px solid #ffd795;
+    outline-offset: 2px;
   }
 
   .scene:not([data-mode="running"]) .missionBrief {
     display: none;
-  }
-
-  .controls button {
-    touch-action: manipulation;
-  }
-
-  .laneNumber,
-  .best {
-    color: #f7dfc8;
-  }
-
-  .actions {
-    margin-left: auto;
-  }
-
-  .jump {
-    min-width: clamp(6.5rem, 23vw, 8.25rem);
-    min-height: clamp(2.9rem, calc(var(--runner-frame-height) * 0.16), 3.75rem);
-    font-size: 1rem;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .jump:active:not(:disabled) {
-    background: #168980;
-    box-shadow: inset 0 0.16rem 0.36rem #003e3e50;
   }
 
   .mobilePolicy {
@@ -835,6 +882,26 @@
     font-weight: 730;
     text-decoration: underline;
     text-underline-offset: 0.15em;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 17rem) and (max-width: 64rem), (orientation: portrait) and (max-width: 17rem) {
+  .touchControls {
+    padding-block-end: 0.25rem;
+  }
+
+  .touchLaneControls {
+    grid-template-columns: repeat(3, auto);
+    margin-inline-start: calc(var(--runner-frame-height) * 0.25);
+  }
+
+  .touchButton,
+  .touchLaneNumber {
+    grid-area: auto;
+  }
+
+  .touchLaneNumber {
+    align-self: center;
   }
 }
 
