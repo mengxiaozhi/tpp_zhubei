@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import { useCallback, useEffect, useRef, type PointerEvent } from "react";
 
 import styles from "./runner-joystick.module.css";
 
@@ -9,20 +9,21 @@ type Input = {
   pointer: number;
   x: number;
   y: number;
+  thumbTravel: number;
   localY: (dx: number, dy: number) => number;
   direction: Direction | 0;
   tap: Direction | 0;
-  dragged: boolean;
 };
 
-const deadzone = 10;
-const thumbTravel = 18;
-const repeatDelay = 185;
+const engageDistance = 8;
+const releaseDistance = 4;
+const tapSlop = 6;
+const holdDelay = 280;
 
 function localYAxis(element: HTMLDivElement) {
   const board = element.closest("[data-runner-board]");
   const transform = board ? getComputedStyle(board).transform : "none";
-  if (transform === "none") return (_dx: number, dy: number) => dy;
+  if (transform === "none" || typeof DOMMatrixReadOnly === "undefined") return (_dx: number, dy: number) => dy;
 
   const { c, d } = new DOMMatrixReadOnly(transform);
   const distance = c * c + d * d;
@@ -31,30 +32,38 @@ function localYAxis(element: HTMLDivElement) {
   return (dx: number, dy: number) => (c * dx + d * dy) / distance;
 }
 
+function moveDirection(y: number, cross: number, previous: Direction | 0): Direction | 0 {
+  const distance = Math.abs(y);
+  const sign = y < 0 ? -1 : 1;
+  if (distance <= releaseDistance || distance < cross * 0.32) return 0;
+  if (previous === sign) return previous;
+  return distance >= engageDistance && distance >= cross * 0.55 ? sign : 0;
+}
+
 export function RunnerJoystick({ disabled, onStep }: { disabled: boolean; onStep: (direction: Direction) => void }) {
   const padRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<Input | null>(null);
   const timerRef = useRef<number | null>(null);
   const stepRef = useRef(onStep);
-  const [offset, setOffset] = useState(0);
-  const [dragging, setDragging] = useState(false);
 
-  const stopRepeat = useCallback(() => {
-    if (timerRef.current !== null) window.clearInterval(timerRef.current);
+  const cancelHold = useCallback(() => {
+    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     timerRef.current = null;
   }, []);
 
   const reset = useCallback(() => {
     const input = inputRef.current;
     inputRef.current = null;
-    stopRepeat();
+    cancelHold();
     if (!input) return;
 
     const pad = padRef.current;
-    if (pad?.hasPointerCapture(input.pointer)) pad.releasePointerCapture(input.pointer);
-    setOffset(0);
-    setDragging(false);
-  }, [stopRepeat]);
+    if (!pad) return;
+    delete pad.dataset.dragging;
+    delete pad.dataset.direction;
+    pad.style.removeProperty("--runner-stick-y");
+    if (pad.hasPointerCapture(input.pointer)) pad.releasePointerCapture(input.pointer);
+  }, [cancelHold]);
 
   useEffect(() => {
     stepRef.current = onStep;
@@ -65,60 +74,85 @@ export function RunnerJoystick({ disabled, onStep }: { disabled: boolean; onStep
   }, [disabled, reset]);
 
   useEffect(() => {
+    const hide = () => {
+      if (document.hidden) reset();
+    };
     window.addEventListener("resize", reset);
     window.addEventListener("blur", reset);
+    document.addEventListener("visibilitychange", hide);
     return () => {
       window.removeEventListener("resize", reset);
       window.removeEventListener("blur", reset);
-      stopRepeat();
+      document.removeEventListener("visibilitychange", hide);
+      reset();
     };
-  }, [reset, stopRepeat]);
+  }, [reset]);
 
   function start(event: PointerEvent<HTMLDivElement>) {
     if (disabled || inputRef.current || event.button !== 0) return;
 
     const pad = event.currentTarget;
     const bounds = pad.getBoundingClientRect();
+    const tapZone = pad.clientHeight * 0.17;
     const localY = localYAxis(pad);
-    const tap = localY(event.clientX - bounds.left - bounds.width / 2, event.clientY - bounds.top - bounds.height / 2);
+    const y = localY(event.clientX - bounds.left - bounds.width / 2, event.clientY - bounds.top - bounds.height / 2);
+    const tap = y < -tapZone ? -1 : y > tapZone ? 1 : 0;
 
     event.preventDefault();
-    pad.setPointerCapture(event.pointerId);
+    try {
+      pad.setPointerCapture(event.pointerId);
+    } catch {
+      // A pointer whose capture was refused can still be used inside the pad.
+    }
     inputRef.current = {
       pointer: event.pointerId,
       x: event.clientX,
       y: event.clientY,
+      thumbTravel: Math.min(16, pad.clientHeight * 0.23),
       localY,
       direction: 0,
-      tap: tap < -deadzone ? -1 : tap > deadzone ? 1 : 0,
-      dragged: false,
+      tap,
     };
-    setDragging(true);
+    pad.dataset.dragging = "true";
+    if (tap) pad.dataset.direction = tap < 0 ? "up" : "down";
   }
 
   function move(event: PointerEvent<HTMLDivElement>) {
     const input = inputRef.current;
     if (disabled || !input || input.pointer !== event.pointerId) return;
 
-    const dy = input.localY(event.clientX - input.x, event.clientY - input.y);
-    const direction = dy < -deadzone ? -1 : dy > deadzone ? 1 : 0;
-    setOffset(Math.round(Math.max(-thumbTravel, Math.min(thumbTravel, dy))));
+    const dx = event.clientX - input.x;
+    const dy = event.clientY - input.y;
+    const y = input.localY(dx, dy);
+    const travel = Math.hypot(dx, dy);
+    const cross = Math.sqrt(Math.max(0, travel * travel - y * y));
+    if (travel > tapSlop) input.tap = 0;
+    const direction = moveDirection(y, cross, input.direction);
+    const pad = event.currentTarget;
+    const offset = Math.round(Math.max(-input.thumbTravel, Math.min(input.thumbTravel, y)));
+    pad.style.setProperty("--runner-stick-y", `${offset}px`);
+    const highlight = direction || input.tap;
+    if (highlight) pad.dataset.direction = highlight < 0 ? "up" : "down";
+    else delete pad.dataset.direction;
 
     if (direction === input.direction) return;
     input.direction = direction;
-    stopRepeat();
+    cancelHold();
     if (!direction) return;
 
-    input.dragged = true;
     stepRef.current(direction);
-    timerRef.current = window.setInterval(() => stepRef.current(direction), repeatDelay);
+    timerRef.current = window.setTimeout(() => {
+      timerRef.current = null;
+      if (inputRef.current === input && input.direction === direction) stepRef.current(direction);
+    }, holdDelay);
   }
 
   function finish(event: PointerEvent<HTMLDivElement>) {
     const input = inputRef.current;
     if (!input || input.pointer !== event.pointerId) return;
 
-    if (!disabled && event.type === "pointerup" && !input.dragged && input.tap) stepRef.current(input.tap);
+    const travel = Math.hypot(event.clientX - input.x, event.clientY - input.y);
+    if (!disabled && event.type === "pointerup" && input.tap && travel <= tapSlop) stepRef.current(input.tap);
     reset();
   }
 
@@ -128,14 +162,15 @@ export function RunnerJoystick({ disabled, onStep }: { disabled: boolean; onStep
       className={styles.pad}
       role="group"
       aria-label="換道搖桿"
-      data-dragging={dragging || undefined}
       data-disabled={disabled || undefined}
-      style={{ "--runner-stick-y": `${offset}px` } as CSSProperties}
       onPointerDown={start}
       onPointerMove={move}
       onPointerUp={finish}
       onPointerCancel={finish}
       onLostPointerCapture={finish}
+      onPointerLeave={(event) => {
+        if (event.pointerId === inputRef.current?.pointer && !event.currentTarget.hasPointerCapture(event.pointerId)) reset();
+      }}
       onKeyDown={(event) => {
         const direction = event.key === "ArrowUp" ? -1 : event.key === "ArrowDown" ? 1 : 0;
         if (disabled || !direction) return;

@@ -287,7 +287,6 @@
 @media (max-width: 40rem) {
   .drawer {
     width: 100%;
-    max-height: calc(100dvh - max(0.65rem, env(safe-area-inset-top)));
     border-inline: 0;
     border-radius: 1.2rem 1.2rem 0 0;
   }
@@ -300,6 +299,37 @@
 
   .preview {
     width: min(calc(100% - 0.45rem), 19rem);
+  }
+}
+
+@media (max-width: 40rem), (pointer: coarse) and (max-height: 32rem) {
+  .drawer {
+    inset-block-end: var(--drawer-viewport-bottom, 0px);
+    max-height: calc(var(--drawer-viewport-height, 100dvh) - max(0.65rem, env(safe-area-inset-top)));
+  }
+
+  .drawerHeader,
+  .drawerBody {
+    padding-inline-start: max(1rem, env(safe-area-inset-left));
+    padding-inline-end: max(1rem, env(safe-area-inset-right));
+  }
+
+  .drawerHeader {
+    padding-block: 0.64rem;
+  }
+
+  .drawerBody {
+    padding-top: 1rem;
+    scroll-padding-block: 0.8rem;
+  }
+
+  .create {
+    justify-self: stretch;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

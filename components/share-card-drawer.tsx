@@ -63,6 +63,36 @@ export function ShareCardDrawer() {
     };
   }, []);
 
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    const viewport = window.visualViewport;
+    if (!open || !dialog || !viewport) return;
+
+    const resetViewport = () => {
+      dialog.style.removeProperty("--drawer-viewport-height");
+      dialog.style.removeProperty("--drawer-viewport-bottom");
+    };
+
+    const updateViewport = () => {
+      if (viewport.scale > 1.01) {
+        resetViewport();
+        return;
+      }
+      const bottom = Math.max(0, document.documentElement.clientHeight - viewport.height - viewport.offsetTop);
+      dialog.style.setProperty("--drawer-viewport-height", `${viewport.height}px`);
+      dialog.style.setProperty("--drawer-viewport-bottom", `${bottom}px`);
+    };
+
+    updateViewport();
+    viewport.addEventListener("resize", updateViewport);
+    viewport.addEventListener("scroll", updateViewport);
+    return () => {
+      viewport.removeEventListener("resize", updateViewport);
+      viewport.removeEventListener("scroll", updateViewport);
+      resetViewport();
+    };
+  }, [open]);
+
   function closeDrawer() {
     if (closingRef.current) return;
     closingRef.current = true;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { CampaignBrand } from "./campaign-brand";
 import { ShareCardLink } from "./share-card-link";
@@ -31,10 +31,34 @@ function MenuIcon({ open }: { open: boolean }) {
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const desktop = window.matchMedia("(min-width: 768px)");
+    function dismissOutside(event: PointerEvent) {
+      if (event.target instanceof Node && !headerRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function closeOnDesktop(event: MediaQueryListEvent) {
+      if (event.matches) setOpen(false);
+    }
+
+    document.addEventListener("pointerdown", dismissOutside);
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => {
+      document.removeEventListener("pointerdown", dismissOutside);
+      desktop.removeEventListener("change", closeOnDesktop);
+    };
+  }, [open]);
 
   return (
     <header
+      ref={headerRef}
       className={styles.header}
       onKeyDown={(event) => {
         if (event.key === "Escape" && open) {
@@ -47,7 +71,7 @@ export function SiteHeader() {
         跳至主要內容
       </a>
       <div className={`site-container ${styles.headerInner}`}>
-        <a href="#top" aria-label="劉文軒首頁" onClick={() => setOpen(false)}>
+        <a href="#top" aria-label="劉文軒首頁" className={styles.homeLink} onClick={() => setOpen(false)}>
           <CampaignBrand />
         </a>
 
@@ -89,7 +113,7 @@ export function SiteHeader() {
         hidden={!open}
         className={styles.mobileNav}
       >
-        <div className="site-container">
+        <div className={`site-container ${styles.mobileNavInner}`}>
           {navItems.map((item) => (
             <a
               key={item.href}

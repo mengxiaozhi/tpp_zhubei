@@ -381,7 +381,7 @@ export function StreetRunner() {
 
   return (
     <div ref={frameRef} className={styles.frame}>
-      <section className={styles.game} aria-label="6F 街區跑酷遊戲" data-runner-board="" onKeyDown={handleKeys}>
+      <section className={styles.game} aria-label="6F 街區跑酷遊戲" data-runner-board="" data-mode={mode} onKeyDown={handleKeys}>
         <div className={styles.mobileBar}>
           <Link href="/" aria-label="離開遊戲，回網站"><span aria-hidden="true">‹</span> 回網站</Link>
           <strong>{mode === "ready" ? "竹北 6F 街區跑酷" : `${pillar.chinese}・${stage.scene}`}</strong>
@@ -415,8 +415,8 @@ export function StreetRunner() {
             aria-label="街區跑道"
             aria-describedby="runner-controls"
             onPointerDown={(event) => {
-              if (modeRef.current !== "running" || event.button !== 0) return;
-              if (event.pointerType === "mouse") sceneRef.current?.focus({ preventScroll: true });
+              if (event.pointerType !== "mouse" || event.button !== 0 || modeRef.current !== "running") return;
+              sceneRef.current?.focus({ preventScroll: true });
               jump();
             }}
           >
@@ -439,9 +439,9 @@ export function StreetRunner() {
                   <h2>{graphics === "loading" ? "正在建立 3D 街區…" : graphics === "unavailable" ? "這個瀏覽器無法開啟遊戲" : stateTitle}</h2>
                   {mode === "ready" && canStart && (
                     <p>
-                      <span className={styles.turnHint}>請橫握手機。</span>
+                      <span className={styles.turnHint}>開始後切換成橫向跑道。</span>
                       <span className={styles.desktopHint}>跟著街區任務換道、跳躍，收集六個 F。</span>
-                      <span className={styles.touchHint}>用搖桿換道，按右側的跳躍鍵起跳。</span>
+                      <span className={styles.touchHint}>左手用搖桿換道，右手按跳躍。</span>
                     </p>
                   )}
                   {stopped && (
@@ -478,7 +478,23 @@ export function StreetRunner() {
             <button type="button" className={styles.pause} onClick={mode === "paused" ? start : pause} disabled={!canPause}>
               {mode === "paused" ? "繼續" : "暫停"}
             </button>
-            <button type="button" className={styles.jump} disabled={mode !== "running"} onClick={jump}>跳躍 <span aria-hidden="true">↑</span></button>
+            <button
+              type="button"
+              className={styles.jump}
+              disabled={mode !== "running"}
+              onPointerDown={(event) => {
+                if (event.button !== 0) return;
+                event.preventDefault();
+                if (event.pointerType === "mouse") sceneRef.current?.focus({ preventScroll: true });
+                jump();
+              }}
+              onClick={(event) => {
+                // Pointer activation jumps on press. Keyboard and assistive activation still click.
+                if (event.detail === 0) jump();
+              }}
+            >
+              跳躍 <span aria-hidden="true">↑</span>
+            </button>
           </div>
         </div>
 

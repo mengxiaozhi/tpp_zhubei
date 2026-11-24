@@ -11,6 +11,7 @@ const exampleName = "竹北好鄰居";
 const photoTypes = ["image/jpeg", "image/png", "image/webp"];
 const photoSizeLimit = 10 * 1024 * 1024;
 const shareUrl = new URL(shareCardHash, shareCardSiteUrl).href;
+const compactDrawer = "(max-width: 40rem), (pointer: coarse) and (max-height: 32rem)";
 
 async function renderCard(name: string, photo?: File) {
   const { drawShareCard } = await import("@/lib/draw-share-card");
@@ -20,7 +21,9 @@ async function renderCard(name: string, photo?: File) {
 export function ShareCardMaker() {
   const nameId = useId();
   const photoId = useId();
+  const nameRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
   const generation = useRef(0);
   const resultUrl = useRef("");
 
@@ -58,6 +61,12 @@ export function ShareCardMaker() {
     if (resultUrl.current) URL.revokeObjectURL(resultUrl.current);
   }, []);
 
+  useEffect(() => {
+    if (card && window.matchMedia(compactDrawer).matches) {
+      actionsRef.current?.scrollIntoView({ block: "start" });
+    }
+  }, [card]);
+
   function clearResult() {
     generation.current += 1;
     if (resultUrl.current) URL.revokeObjectURL(resultUrl.current);
@@ -85,6 +94,9 @@ export function ShareCardMaker() {
       return;
     }
 
+    if (document.activeElement === nameRef.current && window.matchMedia(compactDrawer).matches) {
+      nameRef.current?.blur();
+    }
     clearResult();
     const attempt = generation.current;
     setWorking(true);
@@ -157,11 +169,13 @@ export function ShareCardMaker() {
             <legend className="sr-only">製卡資料</legend>
             <label htmlFor={nameId}>你想顯示的稱呼</label>
             <input
+              ref={nameRef}
               id={nameId}
               value={name}
               required
               maxLength={40}
               autoComplete="off"
+              enterKeyHint="done"
               placeholder="例如：竹北好鄰居"
               onChange={(event) => {
                 clearResult();
@@ -201,7 +215,7 @@ export function ShareCardMaker() {
           </fieldset>
         </form>
         {card && (
-          <div className={styles.actions}>
+          <div ref={actionsRef} className={styles.actions}>
             <ButtonLink href={card.url} download={shareCardFileName} variant="outline">
               下載 PNG <span aria-hidden="true">↓</span>
             </ButtonLink>
