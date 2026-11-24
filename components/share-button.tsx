@@ -32,35 +32,36 @@ export function ShareButton() {
     const shareData = {
       title: "劉文軒｜6F 行動政見",
       text: "FAST、FAMILY、FAIR、FUTURE、FRESH、FIX——六個 F，讓改變真正發生。",
-      url: window.location.href,
+      url: new URL("#policies", window.location.href).href,
     };
 
-    try {
-      if (navigator.share) {
+    if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
+      try {
         await navigator.share(shareData);
         return;
-      }
-
-      await navigator.clipboard.writeText(window.location.href);
-      setLabel("已複製網址");
-      window.setTimeout(() => setLabel("分享 6F 政見"), 2200);
-    } catch (error) {
-      if ((error as DOMException).name !== "AbortError") {
-        setLabel("請從瀏覽器分享");
-        window.setTimeout(() => setLabel("分享 6F 政見"), 2200);
+      } catch (error) {
+        if ((error as DOMException).name === "AbortError") return;
       }
     }
+
+    try {
+      await navigator.clipboard.writeText(shareData.url);
+      setLabel("已複製網址");
+    } catch {
+      setLabel("請從瀏覽器分享");
+    }
+    window.setTimeout(() => setLabel("分享 6F 政見"), 2200);
   }
 
   return (
-    <div className="flex flex-col items-start gap-2 sm:items-end">
-      <Button type="button" variant="dark" onClick={handleShare}>
-        {label}
+    <>
+      <Button type="button" className="editorial-share-button" onClick={handleShare}>
         <ShareIcon />
+        {label}
       </Button>
       <span className="sr-only" aria-live="polite">
         {label}
       </span>
-    </div>
+    </>
   );
 }

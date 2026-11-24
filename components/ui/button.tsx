@@ -7,23 +7,23 @@ const variantClasses: Record<ButtonVariant, string> = {
   default:
     "border-primary bg-primary text-primary-foreground hover:bg-primary/90",
   outline:
-    "border-primary bg-transparent text-foreground hover:bg-primary hover:text-primary-foreground",
+    "border-primary/40 bg-transparent text-primary hover:border-primary hover:bg-secondary",
   ghost: "border-transparent bg-transparent text-foreground hover:bg-muted",
-  dark: "border-white/20 bg-white/5 text-white hover:border-primary hover:bg-primary hover:text-primary-foreground",
+  dark: "border-white/40 bg-white/10 text-white hover:border-white hover:bg-white hover:text-primary",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  default: "h-12 px-6 py-3 text-[15px]",
+  default: "min-h-12 px-3 py-2.5 text-sm sm:px-5",
   sm: "h-10 px-4 text-sm",
   icon: "size-11 p-0",
 };
 
-function buttonClasses(
+export function buttonClasses(
   variant: ButtonVariant,
   size: ButtonSize,
   className = "",
 ) {
-  return `inline-flex shrink-0 items-center justify-center gap-2 rounded-sm border font-bold tracking-[0.04em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
+  return `inline-flex shrink-0 items-center justify-center gap-2 rounded-full border font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-[1.1rem] [&_svg]:shrink-0 ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
 }
 
 export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {

@@ -1,0 +1,98 @@
+.figure {
+  max-width: 33rem;
+  margin-top: clamp(1.25rem, 2.5vw, 2rem);
+}
+
+.stage {
+  position: relative;
+  aspect-ratio: 1.7;
+}
+
+.poster {
+  position: absolute;
+  inset: 0;
+  width: 88%;
+  height: 100%;
+  margin: auto;
+  object-fit: contain;
+  opacity: 1;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  visibility: hidden;
+  cursor: grab;
+  opacity: 0;
+  touch-action: pan-y;
+  transition: opacity 180ms ease;
+}
+
+.stage[data-renderer="ready"] .canvas {
+  visibility: visible;
+  opacity: 1;
+}
+
+.stage[data-renderer="ready"] .poster {
+  opacity: 0;
+}
+
+.canvas:active {
+  cursor: grabbing;
+}
+
+.toolbar {
+  display: flex;
+  min-height: 3.45rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.55rem 0.9rem;
+  padding-block: 0.35rem;
+}
+
+.title {
+  font-size: 0.95rem;
+  font-weight: 850;
+}
+
+.hint {
+  color: var(--editorial-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.hint:empty {
+  display: none;
+}
+
+.controls {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.controls button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--editorial-mint);
+  color: var(--editorial-teal-dark);
+  transition: background-color 160ms ease;
+}
+
+.controls button svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+@media (hover: hover) {
+  .controls button:hover {
+    background: #d5e8df;
+  }
+}

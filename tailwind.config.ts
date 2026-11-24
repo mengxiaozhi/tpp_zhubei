@@ -22,6 +22,7 @@ const config: Config = {
         "accent-foreground": "hsl(var(--accent-foreground))",
         border: "hsl(var(--border))",
         ring: "hsl(var(--ring))",
+        "teal-brand": "hsl(var(--teal-brand))",
       },
       borderRadius: {
         lg: "var(--radius)",

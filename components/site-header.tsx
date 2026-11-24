@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { CampaignBrand } from "./campaign-brand";
+import { ShareCardLink } from "./share-card-link";
+import styles from "./site-chrome.module.css";
 
 const navItems = [
   { href: "#about", label: "認識文軒" },
+  { href: "#video", label: "影片" },
   { href: "#policies", label: "6F 政見" },
-  { href: "#action", label: "一起行動" },
+  { href: "/game", label: "街區跑酷" },
 ];
 
 function MenuIcon({ open }: { open: boolean }) {
@@ -19,92 +22,88 @@ function MenuIcon({ open }: { open: boolean }) {
       stroke="currentColor"
       strokeWidth="1.8"
       strokeLinecap="round"
-      className="size-5"
+      className={styles.menuIcon}
     >
-      {open ? (
-        <>
-          <path d="M6 6l12 12" />
-          <path d="M18 6L6 18" />
-        </>
-      ) : (
-        <>
-          <path d="M4 7h16" />
-          <path d="M4 12h16" />
-          <path d="M4 17h16" />
-        </>
-      )}
+      {open ? <path d="m6 6 12 12M18 6 6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
     </svg>
   );
 }
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/80 bg-background/95 backdrop-blur">
-      <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
-        <a
-          href="#top"
-          aria-label="劉文軒首頁"
-          className="font-display text-2xl font-black tracking-[-0.05em] text-foreground"
-          onClick={() => setOpen(false)}
-        >
-          劉文軒<span className="ml-2 text-xs font-bold tracking-[0.16em] text-primary">LIU</span>
+    <header
+      className={styles.header}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && open) {
+          setOpen(false);
+          toggleRef.current?.focus();
+        }
+      }}
+    >
+      <a href="#top" className={styles.skipLink}>
+        跳至主要內容
+      </a>
+      <div className={`site-container ${styles.headerInner}`}>
+        <a href="#top" aria-label="劉文軒首頁" onClick={() => setOpen(false)}>
+          <CampaignBrand />
         </a>
 
-        <nav aria-label="主要導覽" className="hidden items-center gap-9 md:flex">
+        <nav aria-label="主要導覽" className={styles.desktopNav}>
           {navItems.map((item) => (
             <a
               key={item.href}
               href={item.href}
-              className="text-[15px] font-bold tracking-[0.04em] text-foreground transition-colors hover:text-primary"
+              className={styles.navLink}
             >
               {item.label}
             </a>
           ))}
+          <ShareCardLink className={styles.navLink}>竹北小卡</ShareCardLink>
+          <a href="#action" className={styles.actionLink}>
+            一起行動
+            <svg aria-hidden="true" viewBox="0 0 24 24" className={styles.actionArrow}>
+              <path d="M3.5 12h16m-6-6 6 6-6 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </a>
         </nav>
 
-        <a
-          href="#policies"
-          className="hidden h-11 items-center justify-center border border-primary bg-primary px-5 text-sm font-bold tracking-[0.06em] text-primary-foreground transition-colors hover:bg-primary/90 md:inline-flex"
-        >
-          看見改變
-        </a>
-
-        <Button
+        <button
+          ref={toggleRef}
           type="button"
-          variant="ghost"
-          size="icon"
           aria-label={open ? "關閉選單" : "開啟選單"}
           aria-expanded={open}
           aria-controls="mobile-navigation"
           onClick={() => setOpen((value) => !value)}
-          className="md:hidden"
+          className={styles.menuToggle}
         >
           <MenuIcon open={open} />
-        </Button>
+        </button>
       </div>
 
-      {open ? (
-        <nav
-          id="mobile-navigation"
-          aria-label="行動版導覽"
-          className="border-t border-border bg-background px-5 py-4 md:hidden"
-        >
-          <div className="mx-auto flex max-w-[1440px] flex-col gap-1">
-            {navItems.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="border-b border-border px-1 py-4 text-base font-bold"
-                onClick={() => setOpen(false)}
-              >
-                {item.label}
-              </a>
-            ))}
-          </div>
-        </nav>
-      ) : null}
+      <nav
+        id="mobile-navigation"
+        aria-label="行動版導覽"
+        hidden={!open}
+        className={styles.mobileNav}
+      >
+        <div className="site-container">
+          {navItems.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className={styles.mobileLink}
+              onClick={() => setOpen(false)}
+            >
+              {item.label}
+            </a>
+          ))}
+          <ShareCardLink className={styles.mobileLink} onClick={() => setOpen(false)}>竹北小卡</ShareCardLink>
+          <a href="#action" className={styles.mobileLink} onClick={() => setOpen(false)}>一起行動</a>
+        </div>
+      </nav>
     </header>
   );
 }
